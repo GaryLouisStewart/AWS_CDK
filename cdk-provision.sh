@@ -10,6 +10,18 @@ LIST="environments.txt"
 # CDK_DEPLOY_REGION = the aws region to use for deployments e.g. eu-west-2
 ###################
 
+### do not include this function in the case statement ####
+### this is only to be called from other functions   ######
+
+function cdk_deploy() {
+    export CDK_DEPLOY_ACCOUNT=$1
+    shift
+    export CDK_DEPLOY_REGION=$2
+    shift
+    cdk deploy "$@"
+}
+
+###########################################################
 
 function cdk_create() {
   read -rp "Please enter the project name you wish to create: " PROJECT
@@ -31,14 +43,6 @@ function cdk_init() {
   mkdir -p "${directory}"  \
   && printf '%s\n' "Initalizing a new application using CDK" \
   && cd "${directory}"  && cdk init app --language="${language}"
-}
-
-function cdk_deploy() {
-    export CDK_DEPLOY_ACCOUNT=$1
-    shift
-    export CDK_DEPLOY_REGION=$2
-    shift
-    cdk deploy "$@"
 }
 
 function cdk_provision_project() {
@@ -88,7 +92,7 @@ in
     cdk_create
     ;;
     -d| --deploy)
-    cdk_deploy
+    cdk_provision_project
     ;;
     -i| --init)
     cdk_init
