@@ -1,0 +1,2 @@
+<MY_AWS_ACCOUNT_ID>:eu-west-1
+<MY_AWS_ACCOUNT_ID>:eu-west-2
