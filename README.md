@@ -18,6 +18,7 @@ this project does not cover the following as of yet.
 
 
 Folder structure:
+
 ![folder-struct](src/common/images/cdk-4.png)
 
 
