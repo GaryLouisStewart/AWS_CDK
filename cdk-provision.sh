@@ -8,10 +8,11 @@ LIST="environments.txt"
 # LANGUAGE = the language which you wish to use for the CDK project (e.g. python, typescript, C, Java, .NET)
 # CDK_DEPLOY_ACCOUNT = the aws account which to deploy to, this is read in from the environments.txt file
 # CDK_DEPLOY_REGION = the aws region to use for deployments e.g. eu-west-2
+# AWS_PROFILE = the aws profile that is used
 ###################
 
-### do not include this function in the case statement ####
-### this is only to be called from other functions   ######
+############## do not include these functions in the case statement ##############
+#### these are intended to be used locally and called from other functions #######
 
 function cdk_deploy() {
     export CDK_DEPLOY_ACCOUNT=$1
@@ -25,33 +26,37 @@ function cdk_deploy() {
 
 function cdk_create() {
   read -rp "Please enter the project name you wish to create: " PROJECT
+  read -rp "Please enter the AWS profile you wish to use: " PROFILE
+
+  local profile=${PROFILE}
   local project=${PROJECT}
   local language="Python"
   printf '%s\n' "creating a base project to work from."
+
   mkdir -p "${project}" && cd "${project}" \
+  && printf '%s\n' "Bootstraping the cdk toolkit" \
   && cdk init app --language=python \
   && source .env/bin/activate \
-  && pip install -r requirements.txt
-}
-
-function cdk_init() {
-  local directory=${DIR}
-  local language=${LANGUAGE}
-
-  read -rp "Please enter the name of the directory to initalize: " DIR
-  printf '%s\n' "Creating directory: ${directory}" \
-  mkdir -p "${directory}"  \
-  && printf '%s\n' "Initalizing a new application using CDK" \
-  && cd "${directory}"  && cdk init app --language="${language}"
+  && pip install -r requirements.txt \
+  && cdk bootstrap --profile "${profile}"
 }
 
 function cdk_provision_project() {
+    read -rp "Please enter the directory where your project is located: " DIR
+    read -rp "Please enter the application name that you wish to deploy: " APP
     read -rp "Please enter the Language that you wish to use: " LANGUAGE
     read -rp "Do you wish to continue provisioning (y/n): " STATUS
+
+    local deployments=${LIST}
+    local language=${LANGUAGE}
+    local status=${STATUS}
+    local directory=${DIR}
+    local application=${APP}
+
     if [ "${STATUS}" == "y" ]; then
 
         printf '%.0s-\n' {1..60} '%s\n'
-        printf '%s\n' "Beginning setup of CDK project ${DIR} using ${LANGUAGE}"
+        printf '%s\n' "Beginning setup of CDK project ${directory} using ${language}"
         printf '%.0s-' {1..60}
 
         # initalize a new directory to work from
@@ -60,16 +65,15 @@ function cdk_provision_project() {
 
         # begin while loop in order to do our CDK deployment
         printf '%.0s-' {1..60}
-        printf '%s\n' "Deploying CDK application: ${APP} using ${LANGUAGE}"
+        printf '%s\n' "Deploying CDK application: ${directory}/${application} using ${language}"
         printf '%.0s-' {1..60}
 
         while IFS= read -r line
         do
           f1=$(awk '{split($line,a,":"); print a[1]}')
           f2=$(awk '{split($line,a,":"); print a[2]}')
-          app=${APP}
-          cdk_deploy "${f1}" "${f2}" --app "${APP}" || exit
-        done < ${LIST}
+          cdk_deploy "${f1}" "${f2}" --app "${application}" || exit
+        done < ${deployments}
     else
       printf '%s\n' "Error provision project: aborting" && exit 1
     fi
@@ -79,7 +83,6 @@ function usage() {
     printf '%s\n' "usage: [-c, --create | -d, --deploy | -i, --init  | -h, --help]"
     printf '%s\n' "-c  --create   creates a blank CDK project"
     printf '%s\n' "-d  --deploy   deploys a CDK project"
-    printf '%s\n' "-i  --init     initializes a CDK project"
     printf '%s\n' "-h  --help     shows this help menu"
     exit 1
 }
@@ -93,9 +96,6 @@ in
     ;;
     -d| --deploy)
     cdk_provision_project
-    ;;
-    -i| --init)
-    cdk_init
     ;;
     -h| --help)
     usage
